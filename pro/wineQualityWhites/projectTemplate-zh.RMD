@@ -1,0 +1,1370 @@
+---
+title: "研究和总结数据"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+```
+
+========================================================
+
+```{r echo=FALSE}
+library(ggplot2)
+library(GGally)
+library(corrplot)
+library(RColorBrewer)
+```
+
+```{r echo=FALSE}
+# loda dataset from internet
+wineQualityWhites_data <- read.csv("https://raw.githubusercontent.com/udacity/new-dand-advanced-china/master/%E6%8E%A2%E7%B4%A2%E6%80%A7%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/%E9%A1%B9%E7%9B%AE/wineQualityWhites.csv")
+
+# Save the data locally
+write.csv(wineQualityWhites_data,file='wineQualityWhites.csv',row.names = FALSE)
+
+# load data
+wineQualityWhites <- read.csv('wineQualityWhites.csv')
+
+# remove object
+rm(wineQualityWhites_data)
+
+# To make it short, assign wineQualityWhites to another object and remove the X column, here I call it df.
+df <- subset(wineQualityWhites, select = -c(X))
+```
+
+# 数据预览
+
+```{r echo=FALSE}
+dim(df)
+```
+
+预览各个变量
+
+```{r echo=FALSE}
+str(df)
+```
+
+查看各个变量的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df)
+```
+
+查看数据前10行。
+
+```{r echo=FALSE}
+head(df,10)
+```
+
+本数据集（白葡萄酒质量），共有12个变量，共有4898个观测值
+
+# 单变量绘图选择
+
+## fixed.acidity
+
+为了了解fixed.acidity的分布情况，作出fixed.acidity 的直方图来观察。
+
+```{r echo=FALSE}
+ggplot(aes(x=fixed.acidity), data=df) +
+  geom_histogram(binwidth = 0.1) +
+  scale_x_continuous(breaks=seq(3,15))
+```
+
+查看fixed.acidity 的数据统计计数，可以看到大部分数据的精度（精确到小数点后几位），为直方图的binwidth作参考。
+
+```{r echo=FALSE}
+table(df$fixed.acidity)
+```
+
+查看 fixed.acidity 的描述性统计，及其1%和99%的分位数
+
+```{r echo=FALSE}
+summary(df$fixed.acidity)
+quantile(df$fixed.acidity,c(0.01,0.99))
+```
+
+**小结：**
+
+* 酒石酸（不易挥发酸），单位为g/dm^3，也就是每升含有多少克。
+
+* 上图表明，此数据集中的大部分白葡萄酒的酒石酸含量在5到9之间，很少有超过10的，低于5的也很少。
+
+* 后面可以看看这些极端值（大于10，或者小于4）对酒的评分影响。
+
+
+## volatile.acidity
+
+为了了解fixed.acidity的分布情况，作出volatile.acidity 的直方图来观察。
+
+```{r echo=FALSE}
+ggplot(aes(x=volatile.acidity), data=df) +
+  geom_histogram(binwidth=0.01) +
+  scale_x_continuous(breaks=seq(0,1.2,0.1))
+```
+
+这里，再来看看volatile.acidity的数值统计计数。
+
+```{r echo=FALSE}
+table(df$volatile.acidity)
+```
+
+查看 volatile.acidity 的描述性统计，还有1%和99%的分位数。
+
+```{r echo=FALSE}
+summary(df$volatile.acidity)
+quantile(df$volatile.acidity,c(0.01,0.99))
+```
+
+**小结：**
+
+* 醋酸/乙酸(挥发性酸性),葡萄酒中醋酸的含量，单位为 g/dm^3。
+
+* 根据上图和表格数据，可以看出此数据集中的大部分白葡萄酒的醋酸含量在0.1到0.6之间。
+
+* 文档表明在过高的水平下会导致不愉快的醋味。即醋酸含量在过高情况下，评分可能会降低。
+
+## citric.acid
+
+查看 citric.acid 的数据分布状况。
+
+```{r echo=FALSE}
+ggplot(aes(x=citric.acid), data=df) +
+  geom_histogram(binwidth=0.01) +
+  scale_x_continuous(breaks=seq(0,1.7,0.1))
+```
+
+查看 citric.acid 的统计计数情况。
+
+```{r echo=FALSE}
+table(df$citric.acid)
+```
+
+查看 citric.acid 的部分描述性统计结果，1%和99%对应的分位数。
+
+```{r echo=FALSE}
+summary(df$citric.acid)
+quantile(df$citric.acid,c(0.01,0.99))
+```
+
+**小结：**
+
+* 柠檬酸，单位为g/dm^3。
+
+* 大部分处于0.1和0.7之间，最高为1.66，最低为0。
+
+* 文档显示少量柠檬酸可以为葡萄酒添加“新鲜度”和风味，我理解为少许量的柠檬酸可以增加评分。
+
+## residual.sugar
+
+查看 residual.sugar 的数据分布情况。
+
+```{r echo=FALSE}
+ggplot(aes(x=residual.sugar), data=df) +
+  geom_histogram(binwidth=0.1) 
+```
+
+发现residual.sugar是个右偏斜长尾数据，这里我将其进行对数转换后，再作直方图如下。
+
+```{r echo=FALSE}
+ggplot(aes(x=residual.sugar), data=df) +
+  geom_histogram(binwidth=0.05) +
+  scale_x_log10(breaks=c(0,1,1.5,2,3,10,45)) 
+```
+
+查看 residual.sugar 的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$residual.sugar)
+quantile(df$residual.sugar,c(0.01,0.99))
+```
+
+查看 residual.sugar > 45 的行数据。
+
+```{r echo=FALSE}
+subset(df,residual.sugar>=45)
+```
+
+**小结：**
+
+* 剩余糖含量，单位为g/dm^3。
+
+* 经过对数转换后，数据呈双峰分布。换句话说，大部分糖含量是处于这两个波峰附近的。
+
+* 两个波峰对应的横轴坐标，一个大概为1.5，另一个大概为10.0。
+
+* 文档表明，超过45克/升的葡萄酒被认为是甜的,不过通过上图，可以看出超过45克/升的葡萄酒很少，通过查询可知，只有一种葡萄酒剩余糖含量超过了45克/升。评分则为6分（满分10分），中规中矩。
+
+
+## chlorides
+
+查看 chlorides 的数据分布。
+
+```{r echo=FALSE}
+ggplot(aes(x=chlorides), data=df) +
+  geom_histogram(binwidth=0.001)
+```
+
+查看 chlorides 的值统计计数。
+
+```{r echo=FALSE}
+table(df$chlorides)
+```
+
+查看 chlorides 部分描述统结果。
+
+```{r echo=FALSE}
+summary(df$chlorides)
+quantile(df$chlorides,probs = c(0.01,0.99))
+```
+
+**小结：**
+
+* 葡萄酒中的氯化物含量，文档中指代的是盐（氯化钠），单位为g/dm^3。
+
+* 大部分位于0.01到0.1之间。
+
+对x轴进行log10转换后 chlorides的直方图。
+
+```{r echo=FALSE}
+ggplot(aes(x=chlorides), data=df) +
+  geom_histogram(binwidth = 0.005) +
+  scale_x_log10()
+```
+
+
+## free.sulfur.dioxide
+
+查看 free.sulfur.dioxide 的分布情况。
+
+这里由于数据是集中于0到100之间的，在0到100之间，设置数值间隔25为一个刻度。
+
+```{r echo=FALSE}
+ggplot(aes(x=free.sulfur.dioxide), data=df) +
+  geom_histogram(binwidth = 2) +
+  scale_x_continuous(breaks = c(seq(0,100,25),200,300))
+```
+
+查看 free.sulfur.dioxide 的值统计计数情况。
+
+```{r echo=FALSE}
+table(df$free.sulfur.dioxide)
+```
+
+查看 free.sulfur.dioxide 的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$free.sulfur.dioxide)
+quantile(df$free.sulfur.dioxide,probs = c(0.01,0.99))
+```
+
+**小结：**
+
+* 游离二氧化硫，单位为mg/dm^3（每升多少毫克）。
+
+* 大部分处于0到75之间。
+
+* 二氧化硫的自由形式存在于分子SO2（即溶解气体）和亚硫酸氢离子之间的平衡中，它阻止了微生物的生长和葡萄酒的氧化。
+
+## total.sulfur.dioxide
+
+绘制 total.sulfur.dioxide 的直方图。
+
+```{r echo=FALSE}
+ggplot(aes(x=total.sulfur.dioxide), data=df) +
+  geom_histogram(binwidth = 5) +
+  scale_x_continuous(breaks=c(seq(0,300,25),400))
+```
+
+查看 total.sulfur.dioxide 的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$total.sulfur.dioxide)
+quantile(df$total.sulfur.dioxide,probs = c(0.01,0.99))
+```
+
+**小结：**  
+
+* 总二氧化硫的含量，单位为g/cm^3（每毫升多少克）。 
+
+* 大部分位于50与250之间。 
+
+* 文档显示，在低浓度的情况下，二氧化硫在葡萄酒中几乎是无法检测到的，但在游离的二氧化硫浓度超过50 ppm时，二氧化硫在鼻子和葡萄酒的味道中变得明显。 
+
+## density
+
+查看 density 的数据分布情况。
+
+```{r echo=FALSE}
+ggplot(aes(x=density), data=df) +
+  geom_histogram(binwidth = 0.0002)
+```
+
+查看 density 的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$density)
+quantile(df$density,probs = c(0.01,0.99))
+```
+
+**小结：**   
+
+* 葡萄酒的密度，单位为g/cm^3。   
+
+* 取决于酒精和糖的含量。  
+
+* 大部分处于0.99到1.00之间。  
+
+
+## pH
+
+查看 pH 的数据分布，这里选取直方图。
+
+```{r echo=FALSE}
+ggplot(aes(x=pH), data=df) +
+  geom_histogram(binwidth = 0.01) +
+  scale_x_continuous(breaks = seq(2.8,4,0.1))
+```
+
+查看 pH 的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$pH)
+quantile(df$pH,probs = c(0.01,0.99))
+```
+
+**小结：**  
+
+* 描述酒的酸碱性，pH值  
+
+* 大部分处于2.9到3.5之间  
+ 
+
+## sulphates
+
+查看 sulphates 的数据分布情况。
+
+```{r echo=FALSE}
+ggplot(aes(x=sulphates), data=df) +
+  geom_histogram(binwidth = 0.01)
+```
+
+查看 sulphates 数据的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$sulphates)
+quantile(df$sulphates,probs = c(0.01,0.99))
+```
+
+**小结：**   
+
+* 硫酸盐的含量，单位为g/dm3。 
+
+* 文档显示，这里的硫酸盐具体为硫酸钾，能促进二氧化硫气体（S02）水平的葡萄酒添加剂，可作为一种抗菌剂和抗氧化剂。  
+
+* 大部分位于0.3到0.38之间。 
+
+
+
+## alcohol
+
+查看 alcohol 的数据分布情况。
+
+```{r echo=FALSE}
+ggplot(aes(x=alcohol), data=df) +
+  geom_histogram(binwidth = 0.1)
+```
+
+查看 alcohol 的部分描述性统计结果。
+
+```{r echo=FALSE}
+summary(df$alcohol)
+quantile(df$alcohol,probs = c(0.01,0.99))
+```
+
+**小结：**
+
+* 酒精含量，单位为体积百分比。  
+
+* 大部分处于9到13之间。  
+
+## quality
+
+查看 quality 的分布。
+
+```{r echo=FALSE}
+ggplot(aes(x=quality), data=df) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks=seq(3,9))
+```
+
+查看 quality的统计计数以及部分描述性统计结果。
+
+```{r echo=FALSE}
+table(df$quality)
+summary(df$quality)
+quantile(df$quality,probs = c(0.01,0.99))
+```
+
+**小结：**
+
+* 质量得分，或者说是评分，得分在0到10之间，为整型变量。
+
+* 本数据集中，最高得分为9分，不过只有5个。大多数评分是5，6，7，其中6分占比最多。
+
+* 这里我认为此处可以转为分类变量,便于之后的分类分析。有两个做法，如下：   
+  * 法1，直接转为0，1，2，3，4，5，6，7，8，9，10这11种分类。最终存储为score列。   
+  * 法2，聚合某些数值，将聚合后的数值再次划分为分类变量，比如6分以下，为次品酒，6分和7分则为中等酒。7分以上，酒的品味则为上佳。最终存储为class列。  
+
+这里，我按照这两种方式，将quality这列变量转为因子变量。
+
+```{r echo=FALSE}
+df$score <- factor(df$quality, ordered = TRUE)
+
+cond <- df$quality < 6
+df$class <- ifelse(cond, 'Poor', 'Medium')
+cond <- df$quality > 7
+df$class <- ifelse(cond, 'Ideal', df$class)
+
+df$class <- ordered(df$class, levels=c('Poor','Medium','Ideal'))
+```
+
+预览处理后的数据。
+
+```{r echo=FALSE}
+str(df)
+```
+
+
+# 单变量分析
+
+### 你的数据集结构是什么？
+
+本数据集，共有4898个观测值，共有13个变量（注意X变量是一个行数标识符，为int类型）,具体如下所示
+
+```{r echo=FALSE}
+str(df)
+```
+
+
+### 你的数据集内感兴趣的主要特性有哪些？
+
+我所感兴趣的是哪些特征影响到了最终的人员评分（quality），
+通对文档的理解，过高的volatile.acidity水平下会导致不愉快的醋味，会降低评分。
+一定量的柠檬酸（citric.acid）可以为葡萄酒添加“新鲜度”和风味，会增加评分。
+
+通过以上绘图，我发现，density，residual.sugar和alcohol的分布不大对称，这说明，数据集中的白酒在此两个指标上是存在某些差异的。density，residual.sugar和alcohol也纳入主要特征进行考量。
+
+### 你认为数据集内哪些其他特征可以帮助你探索兴趣特点？
+
+其他的一些变量，比如与二氧化硫相关的一些变量（比如free.sulfur.dioxide，total.sulfur.dioxide），也可能对评分有影响。
+具体对评分的影响如何，还需经过后面的分析发掘。
+
+### 根据数据集内已有变量，你是否创建了任何新变量？
+
+目前创建了两个新变量，分别是score和class，score是对quality转为因子变量的列，而class，则是将quality划分为三个区间，分别是小于6，等于6或者7，大于7，将对应的三个区间转为因子即得class。
+
+### 在已经探究的特性中，是否存在任何异常分布？你是否对数据进行一些操作，如清洁、调整或改变数据的形式？如果是，你为什么会这样做？
+
+对于residual.sugar数据，分布呈现长尾右偏斜，所以这里，我对其进行了对数转换，再次作出直方图，分布呈现双峰形状，两峰值大概分别对应1.5，10.0。从residual.sugar数据来看，有较多的酒是分布在1.5和10.0附近的。
+
+
+# 双变量绘图选择
+
+```{r}
+names(df)
+```
+
+## 绘制一张相关性的热力图
+
+```{r echo=FALSE, fig.width=10, fig.height=10}
+par(fig=c(0.05,0.95,0.05,0.95))
+# 设置图像显示范围，占据横向范围0.05到0.95，占据纵向范围0.05到0.95
+corrplot(cor(subset(df,select = -c(score,class))),
+         # 相关系数矩阵，数据集为df的子集，选取除了score和class之外的列作为子集
+         # 注意cor 中参数应该为数值型
+         type='upper',
+         # 上三角显示
+         order='alphabet', 
+         # 列标排序，这里设置为按照字母顺序排序
+         tl.srt=60, 
+         # 字符串标题，旋转角度，这里设置为旋转60度
+         addCoef.col = 'black', 
+         # 相关性数值显示颜色
+         tl.col = '#03A89E',
+         # 列标颜色
+         number.cex = 0.8, 
+         # （相关性系数）数字相对默认设置的大小
+         tl.cex = 0.8,
+         diag = FALSE)
+         # 隐藏对角线显示
+```
+
+
+
+
+## 绘制矩阵散点图
+
+绘制矩阵散点图   
+
+* 对于连续变量，我这里绘制其散点图和其趋势线，位于下三角区域。   
+
+* 对于因子变量，这里选择箱线图来表示，位于上三角区域。  
+
+
+```{r fig.width=12, fig.height=12}
+start_time <- Sys.time()
+# 记录当前系统时间
+ggpairs(df, 
+        lower = list(continuous = wrap("smooth_loess", color='red',shape = I('.'))),
+        # 设置下三角区域，对于连续数值数据,绘制散点图，散点颜色设置为红色，散点形状设置为点，使用拟合曲线
+        upper = list(combo = wrap("box", outlier.shape = I('.'))))
+        # 设置上三角区域，对于连续和分类数据，绘制箱线图，异常值，使用点表示
+end_time <- Sys.time()
+# 记录当前系统时间
+difftime(end_time, start_time, units = 'secs')
+# 计算此程序运行了多久，单位为秒
+```
+
+
+## score ~ alcohol
+
+下面，来看看score与alcohol之间的散点图
+
+```{r}
+ggplot(aes(x=score, y=alcohol), data=df) +
+  geom_point()
+```
+
+上述散点图相互覆盖，且score是连续的整型分类变量，这里，为了让其显示出连续，将散点图调为抖动，再来观察
+这里将散点抖动图的相对抖动宽度设为0.5，这样，就感觉评分间是平滑过渡的。
+
+
+```{r}
+ggplot(aes(x=score, y=alcohol), data=df) +
+  # 选取数据df，其中x轴数据为score，y轴数据为alcohol
+  geom_point(position=position_jitter(w=0.5),alpha=0.2,size=1,color='steelblue')
+  # 设置散点图为抖动，其中，相对抖动宽度设为0.5，透明度设置为0.2，颜色为steelblue
+```
+
+这里将散点抖动图，抖动的相对宽度采用默认设置，
+再在上面添加一个箱线图图层，同时将箱体透明度设置为0.1，这样可以看到落入其中的散点。
+再对每个score添加一个均值统计量，标记方式为一个红色的圆点。
+最后添加一个趋势线，方法使用线性回归，来观察散点趋势。
+
+```{r}
+ggplot(aes(x=score, y=alcohol), data=df) +
+  # 选取数据df，其中x轴数据为score，y轴数据为alcohol
+  geom_jitter(alpha=0.1) +
+  # 设置为散点抖动，透明度设为0.1
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  # 设置箱线图，箱体透明度为0.1，箱体线宽为1，中位线宽为0.8，颜色为#03A89E
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  # 统计描述，这里选为每个分组的均值，几何形状为点，颜色设置为红色
+  geom_smooth(method = lm, color = "red", aes(group = 1))
+  # 拟合曲线，这里选择方法是线性回归，颜色设置为红色，分组设置为1
+```
+
+看看score的统计计数情况。
+
+```{r}
+table(df$score)
+```
+
+很明显可以看出，score 与 alcohol 呈现较强的正相关性。
+
+## score ~ density
+
+查看 score 与density 的关系图，同样采用之前的方式：散点抖动图，箱线图，均值统计量，趋势线。  
+
+
+
+```{r}
+ggplot(aes(x=score, y=density), data=df) +
+  # 选取数据df，其中x轴数据为score，y轴数据为density
+  geom_jitter(alpha=0.1) +
+  # 设置为散点抖动，透明度设为0.1
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  # 设置箱线图，箱体透明度为0.1，箱体线宽为1，中位线宽为0.8，颜色为#03A89E
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  # 统计描述，这里选为每个分组的均值，几何形状为点，颜色设置为红色
+  geom_smooth(method = lm, color = "red", aes(group = 1))
+  # 拟合曲线，这里选择方法是线性回归，颜色设置为红色，分组设置为1
+```
+
+
+由于density有较少的极值，导致上述图形看起来，在竖直方向存在较多空区域，调整纵轴取值后。如下
+
+```{r}
+summary(df$density)
+```
+
+调整 y方向的限制为 0.9871到1.005，效果如下。
+
+```{r}
+ggplot(aes(x=score, y=density), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = lm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0.9871,1.005))
+  # 使用笛卡尔坐标系，这里，调整y取值范围为 0.9871到1.005之间，
+  # 注意，这种方式并没有剔除其范围之外的数据，只是放大了此区域而已
+  # 统计结果计算时，依旧会统计这个区域之外的数据，与直接使用 ylim 有区别。
+```
+
+可以看出，密度与score之间呈负相关性。 
+
+密度这一变量是由其他变量决定的，比如，alcohol与密度呈负相关（相关系数为-0.78），而alcohol与score是呈正相关的，这也间接说明了，密度与score之间呈负相关。 
+
+
+
+## score ~ fixed.acidity
+
+查看 score 与 fixed.acidity 之间的关系图。方法同上。
+
+```{r}
+ggplot(aes(x=score, y=fixed.acidity), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')
+```
+
+根据上图，似乎score为4，5，6，7，8时，对应的fixed.acidity的中位数差不多。也就是说，fixed.acidity不大能预测score。
+
+
+放大看试试，这里将y方向限制在5到10之间。
+
+```{r}
+ggplot(aes(x=score, y=fixed.acidity), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  coord_cartesian(ylim=c(5,10))
+```
+
+换成class，来查看，也能看出，fixed.acidity不大能预测classs。
+
+```{r}
+ggplot(aes(x=class, y=fixed.acidity), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')
+```
+
+上述两幅图也表明各个种类酒在fixed.acidity 的品控方面相差无几。
+
+## quality ~ volatile.acidity
+
+观察 quality 与 volatile.acidity 之间的关系，这里取消掉趋势线，其他如之前操作。
+
+```{r}
+ggplot(aes(x=score, y=volatile.acidity), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')
+```
+
+文档中提到过，葡萄酒中醋酸的含量，在过高的水平下会导致不愉快的醋味。可以通过查看各个的极值，来验证这一说法。在上图7个分类中，score 分别等于 4，5，6，7，8，9 时，可以看到对应酒的极值（最大异常值）均在变小。  
+
+再来看看class，是否有不一样的结果。  
+
+```{r}
+ggplot(aes(x=class, y=volatile.acidity), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')
+```
+
+上图可看出，中等酒的volatile.acidity更低些。下等酒的volatile.acidity更高。上等酒的volatile.acidity则稍高于中等酒。
+
+## quality ~ citric.acid
+
+文档中提到了一定量的柠檬酸能促进酒的风味。  
+
+查看 quality 与 citric.acid 之间的关系，这里通关散点图外加一条拟合曲线展示，拟合方式选取的auto。  
+
+
+```{r}
+ggplot(aes(x=citric.acid, y=quality), data=df) +
+  geom_point(position=position_jitter(h=0.5),alpha=0.2,size=1,color='steelblue') +
+  stat_smooth()
+  # 添加光滑曲线
+```
+
+放大上图部分，取中间98%数据（首尾各去除1%）观察。即得下图，可以看出，柠檬酸含量大致在0.3（单位为克/升）的时候，评分较高。
+
+```{r}
+ggplot(aes(x=citric.acid, y=quality), data=df) +
+  geom_point(position=position_jitter(h=0.5),alpha=0.2,size=1,color='steelblue') +
+  xlim(quantile(df$citric.acid,0.01),quantile(df$citric.acid,0.99)) +
+  # 限制（剔除）x轴的数据，剔除前1%和后%1数据
+  stat_smooth(method='auto')
+  # 添加光滑曲线，方法选为auto
+```
+
+使用分面图，看能否得到评分较高的酒与评分较低的酒之间的柠檬酸含量是不是不同。
+
+```{r}
+ggplot(aes(x=citric.acid), data=df) +
+  geom_histogram(binwidth = 0.01) +
+  # 绘制直方图，区间宽度设为0.01
+  scale_x_continuous(breaks=seq(0,1.5,0.1)) +
+  # x轴标记，从0到1.5.每间隔0.1，设置一个数字标记
+  facet_wrap(~score,scales="free")
+  # 按照score进行分面操作，其中每个分面的x，y范围自动调节为合适的大小
+```
+
+再次通过之前方法查看 score 与 citric.acid 之间关系。
+
+```{r}
+ggplot(aes(x=score, y=citric.acid), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  coord_cartesian(ylim=c(0,1.0)) +
+  scale_y_continuous(breaks=seq(0,1,0.1))
+```
+
+查看score统计计数
+
+```{r}
+table(df$score)
+```
+
+**小结：**
+    
+* 文档中，提到过，一定量的柠檬酸可以为葡萄酒添加“新鲜度”和风味。通过上图，大致能看出，大部分酒的柠檬酸含量是在0.25 和 0.35之间，大致可以认为，柠檬酸含量在0.25和0.35之间时，风味会更好。  
+
+* 虽然score = 9的中位数和均值明显高于其他分类，但是，这里由于score=9的数量太少（只有5个），不能得出柠檬酸含量接近0.4时，风味会更好，进而评分会更高。  
+
+* 同时，评分较高的酒，可以看出，其区间更小，从4分到8分，箱线图的‘箱’在逐步的变小。score = 9数据量少，不算其中。  
+
+注意：以上柠檬酸数值单位为克/升。   
+
+
+再来看看class 与 citric.acid 间关系。
+
+```{r}
+ggplot(aes(x=class, y=citric.acid), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  coord_cartesian(ylim=c(0,1.0))
+```
+
+可以看出，等级越高的酒，箱体越窄，说明品质越高的酒，它们的citric.acid含量波动越小，较为固定，也可以说明品控把握良好。
+
+## score ~ pH
+
+查看 score 与 pH之间关系，方法如之前所示。
+
+```{r}
+ggplot(aes(x=score, y=pH), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = lm, color = "red", aes(group = 1))
+  
+```
+
+再查看 class 与 pH关系。
+
+```{r}
+ggplot(aes(x=class, y=pH), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')+
+  geom_smooth(method = lm, color = "red", aes(group = 1))
+```
+
+可以看出，pH与得分是呈较弱的正相关的。
+
+## score ~ chlorides
+
+查看 score 与 chlorides 之间关系。
+
+```{r}
+ggplot(aes(x=score, y=chlorides), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = glm, color = "red", aes(group = 1))
+```
+
+放大局部看看
+
+```{r}
+ggplot(aes(x=score, y=chlorides), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = lm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,0.1))
+```
+
+查看 class 与 chlorides 之间关系。
+
+```{r}
+ggplot(aes(x=class, y=chlorides), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')+
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,0.1))
+```
+
+可以看出，score 以及class 与 chlorides呈负相关。
+
+## score ~ residual.sugar
+
+查看 score 与 residual.sugar 之间关系。
+
+```{r}
+ggplot(aes(x=score, y=residual.sugar), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,20))
+```
+
+查看 class 与 residual.sugar 之间关系。
+
+```{r}
+ggplot(aes(x=class, y=residual.sugar), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')+
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,20))
+```
+
+上面可以看出，score和class与residual.sugar呈弱负相关，且酒的等级越高，箱线图中的‘箱体越窄’，也可从某个角度说，对于residual.sugar的品控把握越好。
+
+
+## score ~ total.sulfur.dioxide
+
+查看 score 与 total.sulfur.dioxide 之间关系。
+
+```{r}
+ggplot(aes(x=score, y=total.sulfur.dioxide), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,300))
+```
+
+查看 class 与 total.sulfur.dioxide 之间关系。
+
+```{r}
+ggplot(aes(x=class, y=total.sulfur.dioxide), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')+
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,300))
+```
+
+可以看出，score，class 与 free.sulfur.dioxide呈较弱的负相关性。
+
+## score ~ free.sulfur.dioxide
+
+查看 score 与 free.sulfur.dioxide 之间关系。
+
+```{r}
+ggplot(aes(x=score, y=free.sulfur.dioxide), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,100))
+```
+
+查看 class 与 free.sulfur.dioxide 之间关系。
+
+```{r}
+ggplot(aes(x=class, y=free.sulfur.dioxide), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')+
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0,100))
+```
+
+可以看出，score，class与free.sulfur.dioxide几乎不相关。
+
+## score ~ sulphates
+
+查看 score 与 sulphates 之间关系。
+
+```{r}
+ggplot(aes(x=score, y=sulphates), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0.2,1))
+```
+
+查看 class 与 sulphates 之间关系。
+
+```{r}
+ggplot(aes(x=class, y=sulphates), data=df) +
+  geom_jitter(alpha=0.1) +
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  stat_summary(fun.y='mean',geom='point',color='red')+
+  geom_smooth(method = glm, color = "red", aes(group = 1)) +
+  coord_cartesian(ylim=c(0.2,1))
+```
+
+可以看出，score,class 与 sulphates 呈较弱的正相关。
+
+## alcohol ~ density
+
+查看 alcohol 与 density 之间关系，这里两者都是数值变量，选取散点图，设置透明度为0.2。
+
+同时，x方向，剔除density中1%之前的数据和99%之后的数据，最后，加上一条拟合曲线，拟合方法选取为auto。
+
+```{r}
+ggplot(aes(x=density, y=alcohol), data=df) +
+  geom_point(alpha=0.2,size=1) +
+  # 设置图形为散点图，透明度为0.2，点的大小为1
+  xlim(quantile(df$density,0.01),quantile(df$density,0.99)) +
+  stat_smooth(method='auto')
+```
+
+可以看出，酒精与密度之间是呈较强的负相关的。
+
+## residual.sugar ~ density
+
+依据上面的方法，作出 residual.sugar 与 density 之间的散点图，如下。
+
+```{r}
+ggplot(aes(x=density, y=residual.sugar), data=df) +
+  geom_point(alpha=0.2,size=1) +
+  xlim(quantile(df$density,0.01),quantile(df$density,0.99)) +
+  ylim(0,25) +
+  # 将y轴范围设为0到25之间，同时图像也跟着放大，
+  # 这里会剔除掉范围之外的数据，如果使用了某种统计方法，那么将至统计此范围内的数值
+  stat_smooth(method='auto')
+```
+
+可以看出，residual.sugar 与 density 呈正相关。
+
+## free.sulfur.dioxide ~ total.sulfur.dioxide
+
+作出 free.sulfur.dioxide 与 total.sulfur.dioxide 之间的散点图，这里，限制x轴为0到300，y轴为0到150。
+
+```{r}
+ggplot(aes(x=total.sulfur.dioxide, y=free.sulfur.dioxide), data=df) +
+  geom_point(alpha=0.2,size=1) +
+  xlim(0,300) +
+  ylim(0,150) +
+  stat_smooth(method='auto')
+```
+
+x轴范围在0到250这一段，可以看出，free.sulfur.dioxide 与 total.sulfur.dioxide 之间呈正相关。
+
+## fixed.acidity ~ pH
+
+再来看看 fixed.acidity 与 pH 之间的关系。可以看到呈较弱的负相关性。
+
+```{r}
+ggplot(aes(x=pH, y=fixed.acidity), data=df) +
+  geom_point(alpha=0.2,size=1) +
+  stat_smooth(method='auto')
+```
+
+
+# 双变量分析
+
+### 探讨你在这部分探究中观察到的一些关系。这些感兴趣的特性与数据集内其他特性有什么区别？
+
+这里关注下 quality 与其他变量的关系  
+
+一般情况来说，品质较好的酒，品控也是较好的，反映在理化性质上，就是用料的区别，如果某个用料种类一样，那么唯一的区别就在于该用料的含量上了，品控更好，或者可以说，这个用料含量的范围更窄，更精准。通过以上作图，这里是以箱线图来表示的，我们可以看出，某些用料（citric.acid，residual.sugar，free.sulfur.dioxide），随着等级的提升，箱体确实是越来越窄的，说明对这些用料的控制，一定程度上决定了酒的品质。   
+
+这里挑出与quality相关性系数绝对值超过0.15的变量，并列出其相关性大小。    
+
+  * quality 与 alcohol，相关系数为 0.44，score 与 alcohol 呈现较强的正相关性。    
+  
+  * quality 与 density，相关系数为-0.31。   
+  
+  * quality 与 chlorides，相关系数为-0.21。   
+  
+  * quality 与 volatile.acidity，相关系数为-0.19。   
+  
+  * quality 与 total.sulfur.dioxide，相关系数为-0.17。    
+
+
+两个主要变量与密度之间的相关性。
+alcohol 与 density 
+
+相关系数为-0.78，呈强负相关。这个很好理解，这里alcohol描述的是酒精体积占比。我们知道，通常情况下，酒精的密度是小于水的。那么酒精占比越大，酒的密度就越小。
+
+residual.sugar 与 density 
+
+相关系数为0.84，呈强正相关。这个可以跟上述一样理解。糖的密度大于水，溶解于水中，那么随着糖分的增加，势必会引起水的密度增加。
+
+其他变量与密度相关性如下：
+
+  * total.sulfur.dioxide 与 density相关系数为0.53，呈中等正相关。   
+  
+  * free.sulfur.dioxide 与 density相关系数为0.29，呈弱正相关。  
+  
+  * quality 与 density相关系数为-0.31，呈弱负相关。   
+  
+  * fixed.acidity 与 density相关系数为0.27，呈弱正相关。   
+  
+  * chlorides 与 density相关系数为0.26，呈弱正相关。   
+
+free.sulfur.dioxide 与 total.sulfur.dioxide
+  * 两者正相关，相关系数为0.62。  
+  
+  * 这两者是二氧化硫在酒中存在的不同形式。一部分以二氧化硫分子形式存在，一部分则以游离形式存在。两者互相解释对方。故相关性较高
+
+fixed.acidity 与 pH
+  * 两者相关性高达-0.43，说明了酒的酸性主要是取决于fixed.acidity，也就是不易挥发性酸，酒石酸。
+  
+  * 酒石酸含量越高，pH越小，酒越酸。  
+
+
+### 你是否观察到主要特性与其他特性之间的有趣关系？
+
+在单变量分析中所提到的主要特征，一共5个。
+
+  * volatile.acidity，易挥发性酸，醋酸，score 分别等于 4，5，6，7，8，9 时，可以看到对应酒的极值（最大异常值）均在变小。  
+  
+  * citric.acid，大部分酒的柠檬酸含量是在0.25和0.35之间，(单位为克/升)，大致可以认为，柠檬酸含量在0.25和0.35之间时，风味会更好。 
+  * alcohol，score 与 alcohol的皮尔逊相关系数为0.44，呈现较强的正相关性。  
+  
+  * density，score 与 alcohol的 皮尔逊相关系数为-0.31，呈现中等负相关。密度这一变量是由其他变量决定的，比如，alcohol与密度呈负相关（相关系数为-0.78），而alcohol与score是呈正相关的，这也间接说明了，密度与score之间呈负相关。其他变量与密度之间的相关性，见上题描述。    
+  
+  * residual.sugar, score 与 residual.sugar的皮尔逊相关系数为-0.1,呈微弱负相关，且酒的等级越高，箱线图中的‘箱体越窄’，也可从某个角度说，对于residual.sugar的品控把握越好。  
+
+
+### 你发现最强的关系是什么？
+
+通过相关性分析，发现最强的关系是 residual.sugar 与 density，两者皮尔逊相关系数高达 0.84.
+
+
+
+# 多变量绘图选择
+
+为了获取 volatile.acidity 与 alcohol 之间的相互作用对 score是否有影响。
+这里绘制 volatile.acidity 与 alcohol 之间散点图，同时，点的颜色由该数据点对应的score来表示。
+
+## volatile.acidity ~ alcohol ~ score
+```{r }
+ggplot(aes(x = volatile.acidity, y = alcohol, color = score), data = df) + 
+  # 选取数据集为df，其中x轴数据为volatile.acidity，y轴数据为alcohol，颜色由score来决定
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  # 设置图形为散点图，其中，透明度设为0.5，散点大小为1，散点位置改为抖动，即最终将是抖动散点图
+  scale_color_brewer(type = 'div',palette = 8,
+                     # 选取div类型的调色板中的8号调色板
+                     # 这里div类型的调色板，生成深色强调两端、浅色表示中部的颜色
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          # 设置图例标题为score，图例顺序翻转，
+                                          # 这里我是想把高评分的标记置于上面
+                                          override.aes = list(alpha = 1, size = 3))) + 
+                                          # 设置图例的透明为1，即不透明
+                                          # 设置图例的大小为3
+  theme_dark() +
+  # 设置背景色为黑色，这样更利于显示浅色
+  scale_x_continuous(breaks = seq(0,1,0.1))
+  # 设置x轴的数值标记为，从0到1，每隔0.1标记一次
+```
+
+
+从上图大致可以看出，评分较高的酒，酒精度数大概在12到14之间，挥发性酸大概在0.1到0.4之间；
+评分较低的酒，酒精度数大概在9到11之间，挥发性酸大概在0.3到0.6之间。
+
+
+
+为了获取 volatile.acidity 与 alcohol 之间的相互作用对 class是否有影响。
+这里绘制 volatile.acidity 与 alcohol 之间散点图，同时，点的颜色由该数据点对应的class来表示。
+
+
+```{r}
+ggplot(aes(x = volatile.acidity, y = alcohol, color = class), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +  
+  theme_dark() +
+  scale_x_continuous(breaks = seq(0,1,0.1))
+  ggtitle('alcohol by volatile.acidity and class')
+```
+
+上图可以看出，
+上等酒的酒精度数较高，下等酒的酒精度数较低。而从挥发性酸这一维度上观察，中等酒与上等酒大致在0.1到0.4之间，下等酒的区域更为宽广，大致在0.2到0.6之间。
+
+
+## citric.acid ~ density ~ score
+
+为了获取 citric.acid 与 density 之间的相互作用对 score 是否有影响。
+这里绘制 citric.acid 与 density 之间散点图，同时，点的颜色由该数据点对应的score来表示。
+
+
+```{r }
+ggplot(aes(x = citric.acid, y = density, color = score), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +  
+  theme_dark() +
+  scale_y_continuous(limits = c(0.985, 1.005)) +
+  # y方向范围设置为0.985到1.005
+  scale_x_continuous(limits = c(0, 1), breaks = seq(0,1,0.1)) 
+  # x方向范围设置为0到1，同时每间隔0.1打上一个数值标记，
+```
+
+
+上图可以看出，打分较高的酒，密度大致在0.99至0.995之间，柠檬酸大致在0.2至0.5之间。
+打分较低的酒，密度大致在0.9925至1.000之间，柠檬酸大致在0.1至0.6之间。
+
+
+这里，再分析两者对class的交互作用。
+
+```{r }
+ggplot(aes(x = citric.acid, y = density, color = class), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'class', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +  
+  theme_dark() +
+  scale_y_continuous(limits = c(0.985, 1.005)) +
+  scale_x_continuous(limits = c(0, 1), breaks = seq(0,1,0.1)) 
+```
+
+
+上图可以看出，从柠檬酸维度观察，poor酒的柠檬酸取值范围更广，Medium酒范围较窄，Ideal范围似乎比Medium宽些，但要小于poor。
+从密度维度考察，poor密度更大，Medium较小，Ideal更小。
+
+
+
+## residual.sugar 与 density
+
+为了获取 residual.sugar 与 density 之间的相互作用对 score 是否有影响。
+这里绘制 residual.sugar 与 density 之间散点图，同时，点的颜色由该数据点对应的score来表示。
+
+```{r }
+ggplot(aes(x = residual.sugar, y = density, color = score), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +  
+  theme_dark() +
+  scale_y_continuous(limits = c(0.985, 1.005)) +
+  scale_x_continuous(limits = c(0, 25))
+```
+
+首先可看出，密度与剩余糖含量呈正相关。再来看评分，固定某一residual.sugar，可以看出，评分较高的酒密度更小。固定某一密度，当密度小于0.995时，各个评分在糖含量分布上，7，8分对应的剩余糖含量要高于低分数。当密度大于0.995时，3，4分对应的糖含量较低，5，6分对应的糖含量较高，其他评分对应的糖含量居中。
+
+
+为了获取 residual.sugar 与 density 之间的相互作用对 class 是否有影响。
+这里绘制 residual.sugar 与 density 之间散点图，同时，点的颜色由该数据点对应的class来表示。
+
+```{r }
+ggplot(aes(x = residual.sugar, y = density, color = class), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'class', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +  
+  theme_dark() +
+  scale_y_continuous(limits = c(0.985, 1.005)) +
+  scale_x_continuous(limits = c(0, 25)) 
+```
+
+密度上考量，poor酒密度更大，Medium酒密度居中，Ideal酒密度较小。
+剩余糖含量上考量，Medium和Ideal两者相当且范围更广，Poor的范围更窄。
+
+## volatile.acidity ~ citric.acid ~ score
+
+为了获取 volatile.acidity 与 citric.acid 之间的相互作用对 score 是否有影响。
+这里绘制 volatile.acidity 与 citric.acid 之间散点图，同时，点的颜色由该数据点对应的score来表示。
+
+```{r }
+ggplot(aes(x = volatile.acidity, y = citric.acid, color = score), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +
+  theme_dark()
+```
+
+放大局部看，这里x，y方向，均限制为0到0.8之间。
+
+```{r }
+ggplot(aes(x = volatile.acidity, y = citric.acid, color = score), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +
+  theme_dark() +
+  scale_x_continuous(limits = c(0, 0.8)) +
+  scale_y_continuous(limits = c(0, 0.8))
+```
+
+高评分的柠檬酸含量集中于0.3附近，挥发性酸集中于0.1到0.4之间，下图也可印证。
+
+```{r }
+ggplot(aes(x = volatile.acidity, y = citric.acid, color = class), data = df) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',palette = 8,
+                     guide = guide_legend(title = 'class', reverse = T,
+                                          override.aes = list(alpha = 1, size = 3))) +
+  theme_dark() +
+  scale_x_continuous(limits = c(0, 0.8)) +
+  scale_y_continuous(limits = c(0, 0.8))
+```
+
+
+# 多变量分析
+
+###  探讨你在这部分探究中观察到的一些关系。通过观察感兴趣的特性，是否存在相互促进的特性？
+
+存在相互促进的特性，当各个特性处于某个特定范围时，将相互加强，如下
+评分较高的酒，酒精度数大概在12到14之间，挥发性酸大概在0.2到0.4之间；
+评分较低的酒，酒精度数大概在9到11之间，挥发性酸大概在0.3到0.6之间。
+
+
+### 这些特性之间是否存在有趣或惊人的联系呢？
+
+好的品味，源于特定的搭配配比。评分是由专业人士来打分的，他们是通过感官来感受的，也就是看，闻，尝。三种体验之中，我认为后两者更为重要，如果好看的酒，不好喝，也就是好看罢了，评分不会太高，因为酒是用来喝的，不是一种观赏品。那么，剩下的就是味觉刺激了，通过以上观察发现，评分较高的酒，他们在某些方面是相似的，比如，酒精度数偏高，挥发性酸大致在0.1到0.4的范围内，柠檬酸含量不能太低，也不能太高，在0.2到0.5范围内较多。
+
+### 选项：你是否创建过数据集的任何模型？讨论你模型的优缺点。
+
+这里并没有创建模型。
+
+------
+
+# 定稿图与总结
+
+### 绘图一
+```{r echo=FALSE, Plot_One}
+ggplot(aes(x=residual.sugar), data=df) +
+  # 选取数据df，其中的变量residual.sugar作为x轴数据
+  geom_histogram(binwidth=0.05) +
+  # 设置图形为直方图，区间宽度为0.05
+  scale_x_log10(breaks=c(0,1,1.5,2,3,10,45)) +
+  # x轴上，0，1，1.5，2，3，10，45 位置做上数值标记
+  labs(title ='residual.sugar histogram',
+       # 设置图形标题
+       x = 'residual.sugar (g / dm^3)') +
+       # 设置x轴标签
+  theme(plot.title = element_text(hjust = 0.5))
+  # 设置标题居中显示
+```
+
+### 描述一
+
+上图是对residual.sugar经过对数转换后所作的直方图。数据呈双峰分布，换句话说，大部分糖含量是处于这两个波峰附近的.两个波峰对应的横轴坐标，一个大概为1.5，另一个大概为10.0。
+
+### 绘图二
+```{r echo=FALSE, Plot_Two}
+ggplot(aes(x=score, y=citric.acid), data=df) +
+  # 选取数据df，其中的变量score，citric.acid分别作为x，y数据
+  geom_jitter(alpha=0.1) +
+  # 输出为散点抖动图，透明度设为0.1
+  geom_boxplot(alpha=0.1,lwd=1,fatten=0.8,color='#03A89E') +
+  # 添加要给图层，为箱线图，箱体透明度为0.1，线宽为1，中位线线宽为0.8，箱体线的颜色为#03A89E
+  stat_summary(fun.y='mean',geom='point',color='red') +
+  # 计算统计量，统计方式为y的均值，并在图中显示，显示方式为点，颜色为红色
+  coord_cartesian(ylim=c(0,1.0)) +
+  # 转为笛卡尔坐标，截取y轴范围为0到1.0
+  scale_y_continuous(breaks=seq(0,1,0.1)) +
+  # 给y轴做标记，从0到1.0，每隔0.1做一次标记
+  labs(title = 'citric.acid by score',
+       # 设置标题
+       y = 'citric.acid (g / dm^3)') +
+       # 设置y轴标签
+  theme(plot.title = element_text(hjust = 0.5))
+  # 设置标题居中显示
+```
+
+### 描述二
+
+文档中，提到过，一定量的柠檬酸可以为葡萄酒添加“新鲜度”和风味。通过上图，大致能看出，大部分酒的柠檬酸含量是在0.25 和 0.35之间，大致可以认为，柠檬酸含量在0.25和0.35之间时，风味会更好。
+
+虽然score = 9的中位数和均值明显高于其他分类，但是，这里由于score=9的数量太少（只有5个），不能得出柠檬酸含量接近0.4时，风味会更好，进而评分会更高。
+
+同时，评分较高的酒，可以看出，其区间更小，从4分到8分，箱线图的‘箱’在逐步的变小（score = 9数据量少，不算其中）。也说明高评分的酒对柠檬酸的要求更为严格。
+
+注意：以上柠檬酸数值单位为克/升。
+
+### 绘图三
+
+```{r echo=FALSE, Plot_Three}
+ggplot(aes(x = volatile.acidity, y = alcohol, color = score), data = df) + 
+  # 选取数据集df，其中变量volatile.acidity，alcohol分别指定给x，y，颜色标记取决于score
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  # 输出图形为散点图，透明度设为0.5，点的大小设为1，散点位置抖动
+  scale_color_brewer(type = 'div',palette = 8,
+                     # 调色板类型为div，选取8号调色板
+                     guide = guide_legend(title = 'score', reverse = T,
+                                          # 图例标题为score，图例排序翻转
+                                          # 这里是想让评分高的图例标志显示在最上面
+                                          override.aes = list(alpha = 1, size = 3))) + 
+                                          # 设置图例的透明度为1，即不透明，大小为3
+  theme_dark() +
+  # 画布底色设为黑色，有利于突出显示浅色
+  scale_x_continuous(breaks = seq(0,1,0.1)) +
+  # x轴上做标记，方式为从0到1，每间隔0.1做一次数值标记
+  labs(title = 'alcohol by volatile.acidity and score',
+       # 设置图形标题
+       x = 'volatile.acidity (acetic acid - g / dm^3)',
+       # 设置x轴标签
+       y = 'alcohol (% by volume)') +
+       # 设置y轴标签
+  theme(plot.title = element_text(hjust = 0.5))
+  # 标签设置显示居中
+```
+
+### 描述三
+
+从上图大致可以看出，评分较高的酒，酒精度数大概在12到14之间，挥发性酸大概在0.1到0.4之间；
+评分较低的酒，酒精度数大概在9到11之间，挥发性酸大概在0.3到0.6之间。
+
+------
+
+# 反思
+
+**遇到的难点**：
+
+  * 不清楚怎样用R下载数据集到本地。   
+  * 不大知道如何去表现相关性矩阵图。  
+  * 不清楚矩阵散点图中各个参数的含义。    
+  * 不清楚如何去考察两者的相互作用对评分的影响。    
+  * 感觉其他变量与评分的相关性较弱，不知道怎么搭建预测模型。    
+
+
+**思路历程**
+
+  * 我首先查看了参考文档，了解到每个变量的含义，比如，固定酸，文档中特指是酒石酸，挥发性酸，文档中特指是醋酸。思考他们之间的关系，从中选出几个感兴趣的变量，比如，柠檬酸含量，少许的柠檬酸会增加酒风味，而二氧化硫含量高达某个值会有明显的刺激性气味，我将其纳入主要特征。  
+  
+  * 再通过单变量分析，又纳入了三个变量，分别是密度，酒精和残余糖。  
+  
+  * 之后通过双变量分析，对其与评分作出散点图进行考察，分析其相关性。  
+  
+  * 最后通过多变量分析，这里通过考察某两个感兴趣的变量。再将评分作为第三维度的变量，使用颜色来区分。最终发现了上面所提到的关系。  
+
+**提升**
+
+  * 这次并未搭建出预测模型出来，原因是我对模型的理解并不深刻。未来，需要在此处下下功夫。这样的分析，将会增加对数据的理解。
+
+
+------
+
+# 参考资料
+
+[colorbrewer2](http://colorbrewer2.org/#type=qualitative&scheme=Set1&n=7)
+
+[Facets (ggplot2)](http://www.cookbook-r.com/Graphs/Facets_(ggplot2)/)
+
+[FACTOR VARIABLES](https://stats.idre.ucla.edu/r/modules/factor-variables/)
+
+[Diamonds Exploration by Chris Saden](https://s3.amazonaws.com/content.udacity-data.com/courses/ud651/diamondsExample_2016-05.html)
